@@ -1,63 +1,63 @@
-# VERIFIBOT — UNESCO Challenge
+# VERIFIBOT
 
-Prototipo frontend de una plataforma de fact-checking y alfabetización digital.
-La experiencia central es un chatbot multiturno de demostración con historial,
-evidencia consultada, contenido educativo, gamificación y métricas dummy.
+Prototipo para el reto UNESCO enfocado en verificación de información y
+alfabetización digital. El frontend contiene la experiencia completa con datos
+dummy; el backend es una referencia mínima de FastAPI.
 
-## Tecnologías
+## Estructura
 
-- Node.js 22+
-- React 19
-- TypeScript
-- Vinext / Next App Router
-- Vite
-- Lucide React
-- CSS responsive
+```text
+.
+├── .github/workflows/build.yml
+├── backend/
+│   ├── main.py
+│   └── requirements.txt
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   └── package.json
+├── .env.example
+├── .gitignore
+└── README.md
+```
 
-Esta versión no incluye backend. Los chats, fuentes, resultados y métricas son
-datos de demostración.
+## Ejecutar el frontend
 
-## Cómo correr el proyecto
+Requiere Node.js 22 o posterior.
 
 ```bash
-git clone https://github.com/XJoseAntonioX/UNESCO-Challenge.git
-cd UNESCO-Challenge
+cd frontend
 npm install
 npm run dev
 ```
 
-Abre la dirección que muestre la terminal, normalmente
-`http://localhost:5173`.
-
-## Compilar y validar
+Abre `http://localhost:5173`. Para verificar una compilación de producción:
 
 ```bash
+cd frontend
 npm run build
-npm run validate:artifact
 ```
 
-## Funcionalidad incluida
+## Ejecutar el backend de referencia
 
-- Landing page minimalista y modular.
-- Inicio de sesión y registro demostrativos.
-- Crear, abrir, continuar y eliminar chats.
-- Veredicto, confianza, evidencia y fuentes desplegables.
-- Lecciones, XP, nivel, progreso y racha.
-- Dashboard de verificaciones, resultados, medios y satisfacción.
-- Diseño responsive para escritorio y móvil.
+Requiere Python 3.10 o posterior.
 
-## Estructura principal
-
-```text
-app/
-├── layout.tsx
-├── page.tsx
-└── globals.css
-worker/
-└── index.ts
+```bash
+cd backend
+python -m venv .venv
 ```
 
-## Próxima etapa
+Activa el entorno en PowerShell e instala las dependencias:
 
-Conectar el frontend con FastAPI, LangGraph, Azure AI Foundry, Azure AI Search
-y Azure Database for PostgreSQL.
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+fastapi dev main.py
+```
+
+La API quedará disponible en `http://localhost:8000` y su documentación en
+`http://localhost:8000/docs`.
+
+El backend no está conectado al frontend todavía. Su propósito es mostrar el
+punto de inicio recomendado para la integración futura.
+

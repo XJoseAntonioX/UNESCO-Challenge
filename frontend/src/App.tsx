@@ -1,6 +1,5 @@
-"use client";
-
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import {
   ArrowRight, Award, BarChart3, BookOpen, Bot, Check, CheckCircle2,
   ChevronDown, ExternalLink, FileSearch, Flame, Globe2, Menu, MessageCircle,
