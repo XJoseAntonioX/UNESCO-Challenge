@@ -208,6 +208,87 @@ Deployment authorization policy: GitHub
 
 Because this project uses Vite, the output location must be `dist`, not `build`.
 
+The Bicep module declares both Static Web Apps build output fields:
+
+```text
+appArtifactLocation: dist
+outputLocation: dist
+```
+
+`appArtifactLocation` is deprecated in favor of `outputLocation`, but the Azure
+Portal may still display it as "App artifact location".
+
+### GitHub Workflow Creation
+
+Static Web Apps can create the GitHub Actions workflow automatically only when
+Azure receives a GitHub repository token:
+
+```bicep
+param staticWebAppRepositoryToken string = ''
+```
+
+By default this parameter is empty, because repository tokens are secrets and
+should not be committed to source control.
+
+If you want Azure to generate or repair the Static Web Apps GitHub workflow,
+deploy with a GitHub token that has permission to write repository workflows and
+secrets:
+
+```powershell
+az deployment sub create `
+  --name MAIN `
+  --location southcentralus `
+  --template-file infra/main.bicep `
+  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257" `
+  --parameters staticWebAppRepositoryToken="<github-repository-token>"
+```
+
+If you do not pass `staticWebAppRepositoryToken`, the Static Web App resource can
+still be created, but Azure cannot create the GitHub Actions workflow for you.
+In that case, keep the workflow file in `.github/workflows/` and add the Static
+Web Apps deployment token manually as the GitHub secret
+`AZURE_STATIC_WEB_APPS_API_TOKEN`.
+
+### Verify Static Web Apps Deployment
+
+After deploying with `staticWebAppRepositoryToken`, check GitHub Actions. Azure
+should create or update a Static Web Apps workflow for the repository. The Azure
+portal may take a few minutes to reflect the final deployment status.
+
+Expected frontend settings:
+
+```text
+App location: ./frontend
+API location: empty
+App artifact location: dist
+Output location: dist
+Deployment authorization policy: GitHub
+```
+
+If the Static Web App shows "Waiting for deployment" or the default
+"Congratulations on your new site" page:
+
+1. Check the repository's GitHub Actions tab for a Static Web Apps workflow.
+2. Check that the workflow ran successfully on `main`.
+3. Confirm that the workflow uses `frontend` as the app location and `dist` as
+   the output location.
+4. Confirm that Azure Static Web Apps is connected to the GitHub repository, or
+   that `AZURE_STATIC_WEB_APPS_API_TOKEN` exists if using a manual workflow.
+
+Do not delete the full Azure environment for a frontend deployment issue. If a
+Static Web App resource was created with incorrect settings and does not update
+after redeployment, delete only the Static Web App resource and recreate it from
+Bicep with `staticWebAppRepositoryToken`.
+
+```powershell
+az staticwebapp delete `
+  --name unesco-verifibot `
+  --resource-group unesco-services `
+  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257"
+```
+
+Then rerun the Bicep deployment with the GitHub token parameter.
+
 ## Files
 
 | File                                      | Service                          |

@@ -21,6 +21,10 @@ param staticWebAppLocation string = 'centralus'
 @description('GitHub repository URL connected to the Azure Static Web App.')
 param staticWebAppRepositoryUrl string = 'https://github.com/XJoseAntonioX/UNESCO-Challenge'
 
+@secure()
+@description('GitHub repository token used by Azure to generate the Static Web Apps GitHub Actions workflow and secrets. Leave empty when using a manually managed workflow.')
+param staticWebAppRepositoryToken string = ''
+
 @description('GitHub branch used for Static Web App production deployments.')
 param staticWebAppBranch string = 'main'
 
@@ -127,6 +131,7 @@ module staticWebApp 'modules/static-web-app.bicep' = {
     staticWebAppName: staticWebAppName
     location: staticWebAppLocation
     repositoryUrl: staticWebAppRepositoryUrl
+    repositoryToken: staticWebAppRepositoryToken
     branch: staticWebAppBranch
     appLocation: staticWebAppAppLocation
     apiLocation: staticWebAppApiLocation

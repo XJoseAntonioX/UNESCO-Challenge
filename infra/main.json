@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "15090288916170453123"
+      "templateHash": "14303398477426646533"
     },
     "description": "Deploys the UNESCO services resource group and supporting Azure services."
   },
@@ -47,6 +47,13 @@
       "defaultValue": "https://github.com/XJoseAntonioX/UNESCO-Challenge",
       "metadata": {
         "description": "GitHub repository URL connected to the Azure Static Web App."
+      }
+    },
+    "staticWebAppRepositoryToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "GitHub repository token used by Azure to generate the Static Web Apps GitHub Actions workflow and secrets. Leave empty when using a manually managed workflow."
       }
     },
     "staticWebAppBranch": {
@@ -390,6 +397,9 @@
           "repositoryUrl": {
             "value": "[parameters('staticWebAppRepositoryUrl')]"
           },
+          "repositoryToken": {
+            "value": "[parameters('staticWebAppRepositoryToken')]"
+          },
           "branch": {
             "value": "[parameters('staticWebAppBranch')]"
           },
@@ -413,7 +423,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.46.1.21595",
-              "templateHash": "14871066239816706167"
+              "templateHash": "18026039496178149910"
             },
             "description": "Creates or updates an Azure Static Web App for the frontend."
           },
@@ -436,6 +446,13 @@
               "type": "string",
               "metadata": {
                 "description": "GitHub repository URL connected to the Azure Static Web App."
+              }
+            },
+            "repositoryToken": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "GitHub repository token used by Azure to generate the GitHub Actions workflow and secrets. Leave empty when using a manually managed workflow."
               }
             },
             "branch": {
@@ -481,6 +498,9 @@
               }
             }
           },
+          "variables": {
+            "staticWebAppProperties": "[union(createObject('provider', 'GitHub', 'repositoryUrl', parameters('repositoryUrl'), 'branch', parameters('branch'), 'publicNetworkAccess', 'Enabled', 'allowConfigFileUpdates', true(), 'buildProperties', createObject('appLocation', parameters('appLocation'), 'apiLocation', parameters('apiLocation'), 'appArtifactLocation', parameters('outputLocation'), 'githubActionSecretNameOverride', 'AZURE_STATIC_WEB_APPS_API_TOKEN', 'outputLocation', parameters('outputLocation'), 'skipGithubActionWorkflowGeneration', parameters('skipGithubActionWorkflowGeneration'))), if(empty(parameters('repositoryToken')), createObject(), createObject('repositoryToken', parameters('repositoryToken'))))]"
+          },
           "resources": [
             {
               "type": "Microsoft.Web/staticSites",
@@ -492,19 +512,7 @@
                 "tier": "Free"
               },
               "tags": "[parameters('tags')]",
-              "properties": {
-                "provider": "GitHub",
-                "repositoryUrl": "[parameters('repositoryUrl')]",
-                "branch": "[parameters('branch')]",
-                "publicNetworkAccess": "Enabled",
-                "allowConfigFileUpdates": true,
-                "buildProperties": {
-                  "appLocation": "[parameters('appLocation')]",
-                  "apiLocation": "[parameters('apiLocation')]",
-                  "outputLocation": "[parameters('outputLocation')]",
-                  "skipGithubActionWorkflowGeneration": "[parameters('skipGithubActionWorkflowGeneration')]"
-                }
-              }
+              "properties": "[variables('staticWebAppProperties')]"
             }
           ],
           "outputs": {
