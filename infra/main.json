@@ -1,0 +1,1235 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "15539506483864559432"
+    },
+    "description": "Deploys the UNESCO services resource group and supporting Azure services."
+  },
+  "parameters": {
+    "rgName": {
+      "type": "string",
+      "defaultValue": "unesco-services",
+      "minLength": 1,
+      "maxLength": 90,
+      "metadata": {
+        "description": "Name of the resource group to create or update."
+      }
+    },
+    "rgLocation": {
+      "type": "string",
+      "defaultValue": "southcentralus",
+      "metadata": {
+        "description": "Azure region for the resource group."
+      }
+    },
+    "staticWebAppName": {
+      "type": "string",
+      "defaultValue": "unesco-verifibot",
+      "minLength": 2,
+      "maxLength": 60,
+      "metadata": {
+        "description": "Name of the Azure Static Web App to create or update."
+      }
+    },
+    "staticWebAppLocation": {
+      "type": "string",
+      "defaultValue": "centralus",
+      "metadata": {
+        "description": "Azure region for the Azure Static Web App."
+      }
+    },
+    "staticWebAppRepositoryUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/XJoseAntonioX/UNESCO-Challenge",
+      "metadata": {
+        "description": "GitHub repository URL connected to the Azure Static Web App."
+      }
+    },
+    "staticWebAppBranch": {
+      "type": "string",
+      "defaultValue": "main",
+      "metadata": {
+        "description": "GitHub branch used for Static Web App production deployments."
+      }
+    },
+    "staticWebAppAppLocation": {
+      "type": "string",
+      "defaultValue": "./frontend",
+      "metadata": {
+        "description": "Path to the frontend app from the repository root."
+      }
+    },
+    "staticWebAppApiLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Path to the API app from the repository root. Leave empty when there is no Static Web Apps managed API."
+      }
+    },
+    "staticWebAppOutputLocation": {
+      "type": "string",
+      "defaultValue": "dist",
+      "metadata": {
+        "description": "Path to the frontend build output from the app location."
+      }
+    },
+    "containerRegistryName": {
+      "type": "string",
+      "defaultValue": "unescoverifibotacr",
+      "minLength": 5,
+      "maxLength": 50,
+      "metadata": {
+        "description": "Name of the Azure Container Registry to create or update."
+      }
+    },
+    "containerAppEnvironmentName": {
+      "type": "string",
+      "defaultValue": "unesco-verifibot-env",
+      "minLength": 1,
+      "maxLength": 60,
+      "metadata": {
+        "description": "Name of the Azure Container Apps managed environment to create or update."
+      }
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "unesco-verifibot-logs",
+      "minLength": 4,
+      "maxLength": 63,
+      "metadata": {
+        "description": "Name of the Log Analytics workspace for Container Apps logs."
+      }
+    },
+    "backendContainerAppName": {
+      "type": "string",
+      "defaultValue": "unesco-verifibot-api",
+      "minLength": 1,
+      "maxLength": 32,
+      "metadata": {
+        "description": "Name of the backend Azure Container App to create or update."
+      }
+    },
+    "backendContainerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+      "metadata": {
+        "description": "Initial backend container image. The GitHub Actions workflow replaces this with the built backend image."
+      }
+    },
+    "backendTargetPort": {
+      "type": "int",
+      "defaultValue": 8000,
+      "metadata": {
+        "description": "Container port exposed by the backend app."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "service-secrets-1",
+      "minLength": 3,
+      "maxLength": 24,
+      "metadata": {
+        "description": "Name of the Key Vault to create or update."
+      }
+    },
+    "deployKeyVault": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Deploy the Azure Key Vault service."
+      }
+    },
+    "foundryName": {
+      "type": "string",
+      "defaultValue": "ai-models-challenge",
+      "minLength": 2,
+      "maxLength": 64,
+      "metadata": {
+        "description": "Name of the Microsoft Foundry resource to create or update."
+      }
+    },
+    "foundryProjectName": {
+      "type": "string",
+      "defaultValue": "proj-default",
+      "minLength": 2,
+      "maxLength": 64,
+      "metadata": {
+        "description": "Name of the default Microsoft Foundry project to create or update."
+      }
+    },
+    "searchServiceName": {
+      "type": "string",
+      "defaultValue": "rag-search-challenge",
+      "minLength": 2,
+      "maxLength": 60,
+      "metadata": {
+        "description": "Name of the Azure AI Search service to create or update."
+      }
+    },
+    "cosmosAccountName": {
+      "type": "string",
+      "defaultValue": "cosmos-dev-challenge",
+      "minLength": 3,
+      "maxLength": 44,
+      "metadata": {
+        "description": "Name of the Azure Cosmos DB for NoSQL account to create or update."
+      }
+    },
+    "cosmosLocationName": {
+      "type": "string",
+      "defaultValue": "South Central US",
+      "metadata": {
+        "description": "Cosmos DB regional display name."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to the resource group."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation')))]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rgName": {
+            "value": "[parameters('rgName')]"
+          },
+          "rgLocation": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "15377840220057376299"
+            },
+            "description": "Creates or updates an Azure resource group."
+          },
+          "parameters": {
+            "rgName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 90,
+              "metadata": {
+                "description": "Name of the resource group to create or update."
+              }
+            },
+            "rgLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the resource group."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource group."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('rgName')]",
+              "location": "[parameters('rgLocation')]",
+              "tags": "[parameters('tags')]"
+            }
+          ],
+          "outputs": {
+            "resourceGroupName": {
+              "type": "string",
+              "value": "[parameters('rgName')]"
+            },
+            "resourceGroupLocation": {
+              "type": "string",
+              "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('rgName')), '2024-03-01', 'full').location]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[parameters('deployKeyVault')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('kv-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('keyVaultName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "keyVaultName": {
+            "value": "[parameters('keyVaultName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "12410674607269753045"
+            },
+            "description": "Creates or updates an Azure Key Vault configured for Azure RBAC."
+          },
+          "parameters": {
+            "keyVaultName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 24,
+              "metadata": {
+                "description": "Name of the Key Vault to create or update. Key Vault names must be globally unique."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Key Vault."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Key Vault."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('keyVaultName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "tenantId": "[tenant().tenantId]",
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "enableRbacAuthorization": true
+              }
+            }
+          ],
+          "outputs": {
+            "keyVaultName": {
+              "type": "string",
+              "value": "[parameters('keyVaultName')]"
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('swa-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('staticWebAppName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "staticWebAppName": {
+            "value": "[parameters('staticWebAppName')]"
+          },
+          "location": {
+            "value": "[parameters('staticWebAppLocation')]"
+          },
+          "repositoryUrl": {
+            "value": "[parameters('staticWebAppRepositoryUrl')]"
+          },
+          "branch": {
+            "value": "[parameters('staticWebAppBranch')]"
+          },
+          "appLocation": {
+            "value": "[parameters('staticWebAppAppLocation')]"
+          },
+          "apiLocation": {
+            "value": "[parameters('staticWebAppApiLocation')]"
+          },
+          "outputLocation": {
+            "value": "[parameters('staticWebAppOutputLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "14871066239816706167"
+            },
+            "description": "Creates or updates an Azure Static Web App for the frontend."
+          },
+          "parameters": {
+            "staticWebAppName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "metadata": {
+                "description": "Name of the Azure Static Web App to create or update."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Azure Static Web App."
+              }
+            },
+            "repositoryUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "GitHub repository URL connected to the Azure Static Web App."
+              }
+            },
+            "branch": {
+              "type": "string",
+              "defaultValue": "main",
+              "metadata": {
+                "description": "GitHub branch used for production deployments."
+              }
+            },
+            "appLocation": {
+              "type": "string",
+              "defaultValue": "./frontend",
+              "metadata": {
+                "description": "Path to the frontend app from the repository root."
+              }
+            },
+            "apiLocation": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Path to the API app from the repository root. Leave empty when there is no Static Web Apps managed API."
+              }
+            },
+            "outputLocation": {
+              "type": "string",
+              "defaultValue": "dist",
+              "metadata": {
+                "description": "Path to the frontend build output from the app location."
+              }
+            },
+            "skipGithubActionWorkflowGeneration": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "GitHub Actions workflow generation behavior."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Azure Static Web App."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/staticSites",
+              "apiVersion": "2025-03-01",
+              "name": "[parameters('staticWebAppName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Free",
+                "tier": "Free"
+              },
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "provider": "GitHub",
+                "repositoryUrl": "[parameters('repositoryUrl')]",
+                "branch": "[parameters('branch')]",
+                "publicNetworkAccess": "Enabled",
+                "allowConfigFileUpdates": true,
+                "buildProperties": {
+                  "appLocation": "[parameters('appLocation')]",
+                  "apiLocation": "[parameters('apiLocation')]",
+                  "outputLocation": "[parameters('outputLocation')]",
+                  "skipGithubActionWorkflowGeneration": "[parameters('skipGithubActionWorkflowGeneration')]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "staticWebAppName": {
+              "type": "string",
+              "value": "[parameters('staticWebAppName')]"
+            },
+            "defaultHostname": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/staticSites', parameters('staticWebAppName')), '2025-03-01').defaultHostname]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "registryName": {
+            "value": "[parameters('containerRegistryName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "17737179253901667510"
+            },
+            "description": "Creates or updates an Azure Container Registry for backend container images."
+          },
+          "parameters": {
+            "registryName": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 50,
+              "metadata": {
+                "description": "Name of the Azure Container Registry to create or update."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Azure Container Registry."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Azure Container Registry."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2025-04-01",
+              "name": "[parameters('registryName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Basic"
+              },
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "adminUserEnabled": false,
+                "anonymousPullEnabled": false,
+                "publicNetworkAccess": "Enabled"
+              }
+            }
+          ],
+          "outputs": {
+            "registryName": {
+              "type": "string",
+              "value": "[parameters('registryName')]"
+            },
+            "loginServer": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('registryName')), '2025-04-01').loginServer]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "environmentName": {
+            "value": "[parameters('containerAppEnvironmentName')]"
+          },
+          "logAnalyticsWorkspaceName": {
+            "value": "[parameters('logAnalyticsWorkspaceName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "10855923852088649335"
+            },
+            "description": "Creates or updates an Azure Container Apps managed environment."
+          },
+          "parameters": {
+            "environmentName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "metadata": {
+                "description": "Name of the Azure Container Apps managed environment to create or update."
+              }
+            },
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 63,
+              "metadata": {
+                "description": "Name of the Log Analytics workspace for Container Apps logs."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Container Apps environment and Log Analytics workspace."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Container Apps environment resources."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2025-02-01",
+              "name": "[parameters('logAnalyticsWorkspaceName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            },
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2025-02-02-preview",
+              "name": "[parameters('environmentName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2025-02-01').customerId]",
+                    "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2025-02-01').primarySharedKey]"
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "environmentName": {
+              "type": "string",
+              "value": "[parameters('environmentName')]"
+            },
+            "environmentId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]"
+            },
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "value": "[parameters('logAnalyticsWorkspaceName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('aca-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendContainerAppName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "containerAppName": {
+            "value": "[parameters('backendContainerAppName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "environmentId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation')))), '2025-04-01').outputs.environmentId.value]"
+          },
+          "image": {
+            "value": "[parameters('backendContainerImage')]"
+          },
+          "targetPort": {
+            "value": "[parameters('backendTargetPort')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "175449056405850722"
+            },
+            "description": "Creates or updates the backend Azure Container App."
+          },
+          "parameters": {
+            "containerAppName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "metadata": {
+                "description": "Name of the Azure Container App to create or update."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Azure Container App."
+              }
+            },
+            "environmentId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps managed environment resource ID."
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Container image to deploy."
+              }
+            },
+            "targetPort": {
+              "type": "int",
+              "defaultValue": 8000,
+              "metadata": {
+                "description": "Container port exposed by the backend app."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Azure Container App."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2025-02-02-preview",
+              "name": "[parameters('containerAppName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "managedEnvironmentId": "[parameters('environmentId')]",
+                "configuration": {
+                  "activeRevisionsMode": "Single",
+                  "ingress": {
+                    "external": true,
+                    "targetPort": "[parameters('targetPort')]",
+                    "transport": "auto",
+                    "allowInsecure": false
+                  }
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "backend",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('0.25')]",
+                        "memory": "0.5Gi"
+                      }
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": 0,
+                    "maxReplicas": 3
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "containerAppName": {
+              "type": "string",
+              "value": "[parameters('containerAppName')]"
+            },
+            "latestRevisionFqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2025-02-02-preview').configuration.ingress.fqdn]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation'))))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('foundry-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('foundryName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "foundryName": {
+            "value": "[parameters('foundryName')]"
+          },
+          "projectName": {
+            "value": "[parameters('foundryProjectName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "2671342014287397073"
+            },
+            "description": "Creates or updates a Microsoft Foundry resource and project."
+          },
+          "parameters": {
+            "foundryName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64,
+              "metadata": {
+                "description": "Name of the Microsoft Foundry resource to create or update."
+              }
+            },
+            "projectName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64,
+              "metadata": {
+                "description": "Name of the default Microsoft Foundry project to create or update."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Microsoft Foundry resource."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Microsoft Foundry resources."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2025-06-01",
+              "name": "[parameters('foundryName')]",
+              "location": "[parameters('location')]",
+              "kind": "AIServices",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "sku": {
+                "name": "S0"
+              },
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "allowProjectManagement": true,
+                "customSubDomainName": "[parameters('foundryName')]",
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/projects",
+              "apiVersion": "2025-06-01",
+              "name": "[format('{0}/{1}', parameters('foundryName'), parameters('projectName'))]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "displayName": "[parameters('projectName')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('foundryName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "foundryName": {
+              "type": "string",
+              "value": "[parameters('foundryName')]"
+            },
+            "projectName": {
+              "type": "string",
+              "value": "[parameters('projectName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('search-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('searchServiceName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "searchServiceName": {
+            "value": "[parameters('searchServiceName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "11766056664556930913"
+            },
+            "description": "Creates or updates an Azure AI Search service."
+          },
+          "parameters": {
+            "searchServiceName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 60,
+              "metadata": {
+                "description": "Name of the Azure AI Search service to create or update."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Azure AI Search service."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Azure AI Search service."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Search/searchServices",
+              "apiVersion": "2025-05-01",
+              "name": "[parameters('searchServiceName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "free"
+              },
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "hostingMode": "Default"
+              }
+            }
+          ],
+          "outputs": {
+            "searchServiceName": {
+              "type": "string",
+              "value": "[parameters('searchServiceName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('cosmos-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('cosmosAccountName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "accountName": {
+            "value": "[parameters('cosmosAccountName')]"
+          },
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "locationName": {
+            "value": "[parameters('cosmosLocationName')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "8809027149980584161"
+            },
+            "description": "Creates or updates an Azure Cosmos DB for NoSQL account."
+          },
+          "parameters": {
+            "accountName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 44,
+              "metadata": {
+                "description": "Name of the Azure Cosmos DB for NoSQL account to create or update."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Azure Cosmos DB account."
+              }
+            },
+            "locationName": {
+              "type": "string",
+              "metadata": {
+                "description": "Cosmos DB regional display name."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Azure Cosmos DB account."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts",
+              "apiVersion": "2025-04-15",
+              "name": "[parameters('accountName')]",
+              "location": "[parameters('location')]",
+              "kind": "GlobalDocumentDB",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "databaseAccountOfferType": "Standard",
+                "enableFreeTier": true,
+                "enableMultipleWriteLocations": false,
+                "enableAutomaticFailover": false,
+                "capabilities": [],
+                "capacity": {
+                  "totalThroughputLimit": 1000
+                },
+                "consistencyPolicy": {
+                  "defaultConsistencyLevel": "Session"
+                },
+                "locations": [
+                  {
+                    "locationName": "[parameters('locationName')]",
+                    "failoverPriority": 0,
+                    "isZoneRedundant": false
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "accountName": {
+              "type": "string",
+              "value": "[parameters('accountName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation'))))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation')))), '2025-04-01').outputs.resourceGroupName.value]"
+    },
+    "resourceGroupLocation": {
+      "type": "string",
+      "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('rg-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('rgLocation')))), '2025-04-01').outputs.resourceGroupLocation.value]"
+    },
+    "staticWebAppName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('swa-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('staticWebAppName'), parameters('rgLocation')))), '2025-04-01').outputs.staticWebAppName.value]"
+    },
+    "staticWebAppDefaultHostname": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('swa-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('staticWebAppName'), parameters('rgLocation')))), '2025-04-01').outputs.defaultHostname.value]"
+    },
+    "containerRegistryName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation')))), '2025-04-01').outputs.registryName.value]"
+    },
+    "containerRegistryLoginServer": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation')))), '2025-04-01').outputs.loginServer.value]"
+    },
+    "containerAppEnvironmentName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation')))), '2025-04-01').outputs.environmentName.value]"
+    },
+    "backendContainerAppName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('aca-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendContainerAppName'), parameters('rgLocation')))), '2025-04-01').outputs.containerAppName.value]"
+    },
+    "backendContainerAppFqdn": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('aca-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendContainerAppName'), parameters('rgLocation')))), '2025-04-01').outputs.latestRevisionFqdn.value]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[if(parameters('deployKeyVault'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('kv-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('keyVaultName'), parameters('rgLocation')))), '2025-04-01').outputs.keyVaultName.value, '')]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[if(parameters('deployKeyVault'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('kv-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('keyVaultName'), parameters('rgLocation')))), '2025-04-01').outputs.keyVaultUri.value, '')]"
+    },
+    "foundryName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('foundry-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('foundryName'), parameters('rgLocation')))), '2025-04-01').outputs.foundryName.value]"
+    },
+    "foundryProjectName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('foundry-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('foundryName'), parameters('rgLocation')))), '2025-04-01').outputs.projectName.value]"
+    },
+    "searchServiceName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('search-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('searchServiceName'), parameters('rgLocation')))), '2025-04-01').outputs.searchServiceName.value]"
+    },
+    "cosmosAccountName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cosmos-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('cosmosAccountName'), parameters('rgLocation')))), '2025-04-01').outputs.accountName.value]"
+    }
+  }
+}
