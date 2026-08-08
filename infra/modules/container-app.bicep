@@ -13,8 +13,14 @@ param location string
 @description('Container Apps managed environment resource ID.')
 param environmentId string
 
+@description('User-assigned managed identity resource ID used by the Container App.')
+param identityId string
+
 @description('Container image to deploy.')
 param image string
+
+@description('Azure Container Registry login server used by the backend image.')
+param registryServer string
 
 @description('Container port exposed by the backend app.')
 param targetPort int = 8000
@@ -27,12 +33,21 @@ resource containerApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
   location: location
   tags: tags
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identityId}': {}
+    }
   }
   properties: {
     managedEnvironmentId: environmentId
     configuration: {
       activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: registryServer
+          identity: identityId
+        }
+      ]
       ingress: {
         external: true
         targetPort: targetPort

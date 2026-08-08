@@ -16,7 +16,9 @@ By default, `infra/main.bicep` deploys:
 - Azure Static Web App for the Vite frontend
 - Azure Container Registry for backend images
 - Azure Container Apps managed environment
+- User-assigned managed identity for the backend
 - Azure Container App for the FastAPI backend
+- AcrPull role assignment so the backend can pull private images from ACR
 - Log Analytics workspace for Container Apps logs
 - Microsoft Foundry resource and default project
 - Azure AI Search service
@@ -215,7 +217,9 @@ Because this project uses Vite, the output location must be `dist`, not `build`.
 | `modules/static-web-app.bicep`            | Azure Static Web Apps            |
 | `modules/container-registry.bicep`        | Azure Container Registry         |
 | `modules/container-app-environment.bicep` | Azure Container Apps Environment |
+| `modules/managed-identity.bicep`          | User-assigned managed identity   |
 | `modules/container-app.bicep`             | Azure Container Apps backend     |
+| `modules/acr-pull-role-assignment.bicep`  | AcrPull role assignment          |
 | `modules/key-vault.bicep`                 | Azure Key Vault                  |
 | `modules/foundry.bicep`                   | Microsoft Foundry                |
 | `modules/ai-search.bicep`                 | Azure AI Search                  |

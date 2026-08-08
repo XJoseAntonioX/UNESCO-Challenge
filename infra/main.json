@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "15539506483864559432"
+      "templateHash": "15090288916170453123"
     },
     "description": "Deploys the UNESCO services resource group and supporting Azure services."
   },
@@ -111,6 +111,15 @@
       "maxLength": 32,
       "metadata": {
         "description": "Name of the backend Azure Container App to create or update."
+      }
+    },
+    "backendManagedIdentityName": {
+      "type": "string",
+      "defaultValue": "unesco-verifibot-api-id",
+      "minLength": 3,
+      "maxLength": 128,
+      "metadata": {
+        "description": "Name of the backend user-assigned managed identity."
       }
     },
     "backendContainerImage": {
@@ -725,6 +734,152 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
+      "name": "[format('id-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendManagedIdentityName'), parameters('rgLocation')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('rgLocation')]"
+          },
+          "identityName": {
+            "value": "[parameters('backendManagedIdentityName')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "17342589109755390971"
+            },
+            "description": "Creates or updates a user-assigned managed identity."
+          },
+          "parameters": {
+            "identityName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 128,
+              "metadata": {
+                "description": "Name of the user-assigned managed identity."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the managed identity."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the managed identity."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2024-11-30",
+              "name": "[parameters('identityName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]"
+            }
+          ],
+          "outputs": {
+            "identityId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2024-11-30').principalId]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('acr-pull-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendContainerAppName'), parameters('containerRegistryName')))]",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "registryName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation')))), '2025-04-01').outputs.registryName.value]"
+          },
+          "principalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('id-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendManagedIdentityName'), parameters('rgLocation')))), '2025-04-01').outputs.principalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "56219270575206922"
+            },
+            "description": "Grants AcrPull on an Azure Container Registry to a managed identity."
+          },
+          "parameters": {
+            "registryName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Azure Container Registry."
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID that should receive AcrPull permissions."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('registryName'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('registryName')), parameters('principalId'), 'AcrPull')]",
+              "properties": {
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]"
+              }
+            }
+          ],
+          "outputs": {
+            "roleAssignmentName": {
+              "type": "string",
+              "value": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('registryName')), parameters('principalId'), 'AcrPull')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('id-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendManagedIdentityName'), parameters('rgLocation'))))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
       "name": "[format('aca-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendContainerAppName'), parameters('rgLocation')))]",
       "resourceGroup": "[parameters('rgName')]",
       "properties": {
@@ -742,8 +897,14 @@
           "environmentId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation')))), '2025-04-01').outputs.environmentId.value]"
           },
+          "identityId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('id-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendManagedIdentityName'), parameters('rgLocation')))), '2025-04-01').outputs.identityId.value]"
+          },
           "image": {
             "value": "[parameters('backendContainerImage')]"
+          },
+          "registryServer": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation')))), '2025-04-01').outputs.loginServer.value]"
           },
           "targetPort": {
             "value": "[parameters('backendTargetPort')]"
@@ -759,7 +920,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.46.1.21595",
-              "templateHash": "175449056405850722"
+              "templateHash": "5655025524868151439"
             },
             "description": "Creates or updates the backend Azure Container App."
           },
@@ -784,10 +945,22 @@
                 "description": "Container Apps managed environment resource ID."
               }
             },
+            "identityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User-assigned managed identity resource ID used by the Container App."
+              }
+            },
             "image": {
               "type": "string",
               "metadata": {
                 "description": "Container image to deploy."
+              }
+            },
+            "registryServer": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure Container Registry login server used by the backend image."
               }
             },
             "targetPort": {
@@ -813,12 +986,21 @@
               "location": "[parameters('location')]",
               "tags": "[parameters('tags')]",
               "identity": {
-                "type": "SystemAssigned"
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('identityId'))]": {}
+                }
               },
               "properties": {
                 "managedEnvironmentId": "[parameters('environmentId')]",
                 "configuration": {
                   "activeRevisionsMode": "Single",
+                  "registries": [
+                    {
+                      "server": "[parameters('registryServer')]",
+                      "identity": "[parameters('identityId')]"
+                    }
+                  ],
                   "ingress": {
                     "external": true,
                     "targetPort": "[parameters('targetPort')]",
@@ -858,6 +1040,8 @@
         }
       },
       "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-pull-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendContainerAppName'), parameters('containerRegistryName'))))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('id-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('backendManagedIdentityName'), parameters('rgLocation'))))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation'))))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('acr-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerRegistryName'), parameters('rgLocation'))))]"
       ]
@@ -1198,6 +1382,10 @@
     "containerAppEnvironmentName": {
       "type": "string",
       "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cae-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('containerAppEnvironmentName'), parameters('rgLocation')))), '2025-04-01').outputs.environmentName.value]"
+    },
+    "backendManagedIdentityName": {
+      "type": "string",
+      "value": "[parameters('backendManagedIdentityName')]"
     },
     "backendContainerAppName": {
       "type": "string",

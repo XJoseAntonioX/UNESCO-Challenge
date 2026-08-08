@@ -53,6 +53,11 @@ param logAnalyticsWorkspaceName string = 'unesco-verifibot-logs'
 @maxLength(32)
 param backendContainerAppName string = 'unesco-verifibot-api'
 
+@description('Name of the backend user-assigned managed identity.')
+@minLength(3)
+@maxLength(128)
+param backendManagedIdentityName string = 'unesco-verifibot-api-id'
+
 @description('Initial backend container image. The GitHub Actions workflow replaces this with the built backend image.')
 param backendContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
@@ -160,6 +165,25 @@ module containerAppEnvironment 'modules/container-app-environment.bicep' = {
   ]
 }
 
+module backendManagedIdentity 'modules/managed-identity.bicep' = {
+  name: 'id-${uniqueString(deployment().name, rgName, backendManagedIdentityName, rgLocation)}'
+  scope: resourceGroup(rgName)
+  params: {
+    location: rgLocation
+    identityName: backendManagedIdentityName
+    tags: tags
+  }
+}
+
+module backendAcrPullRole 'modules/acr-pull-role-assignment.bicep' = {
+  name: 'acr-pull-${uniqueString(deployment().name, rgName, backendContainerAppName, containerRegistryName)}'
+  scope: resourceGroup(rgName)
+  params: {
+    registryName: containerRegistry.outputs.registryName
+    principalId: backendManagedIdentity.outputs.principalId
+  }
+}
+
 module backendContainerApp 'modules/container-app.bicep' = {
   name: 'aca-${uniqueString(deployment().name, rgName, backendContainerAppName, rgLocation)}'
   scope: resourceGroup(rgName)
@@ -167,12 +191,14 @@ module backendContainerApp 'modules/container-app.bicep' = {
     containerAppName: backendContainerAppName
     location: rgLocation
     environmentId: containerAppEnvironment.outputs.environmentId
+    identityId: backendManagedIdentity.outputs.identityId
     image: backendContainerImage
+    registryServer: containerRegistry.outputs.loginServer
     targetPort: backendTargetPort
     tags: tags
   }
   dependsOn: [
-    containerRegistry
+    backendAcrPullRole
   ]
 }
 
@@ -224,6 +250,7 @@ output staticWebAppDefaultHostname string = staticWebApp.outputs.defaultHostname
 output containerRegistryName string = containerRegistry.outputs.registryName
 output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
 output containerAppEnvironmentName string = containerAppEnvironment.outputs.environmentName
+output backendManagedIdentityName string = backendManagedIdentityName
 output backendContainerAppName string = backendContainerApp.outputs.containerAppName
 output backendContainerAppFqdn string = backendContainerApp.outputs.latestRevisionFqdn
 output keyVaultName string = deployKeyVault ? keyVault!.outputs.keyVaultName : ''
