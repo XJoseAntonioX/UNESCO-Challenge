@@ -1,180 +1,210 @@
 # Infrastructure Deployment
 
-This folder contains the Azure infrastructure for VERIFIBOT. The deployment is
-written in Bicep and organized with one orchestration file plus small service
-modules.
+This folder contains the Bicep deployment for VERIFIBOT. It creates the Azure
+resources used by the frontend, backend, and supporting services, then GitHub
+Actions handles application deployments after code is pushed.
 
-The goal is to let another developer recreate the cloud environment, deploy the
-frontend to Azure Static Web Apps, deploy the backend to Azure Container Apps,
-and enable GitHub Actions to update the backend whenever code changes are pushed.
+## Story In Short
 
-## What Gets Created
+First, deploy the Azure infrastructure with `infra/main.bicep`. Then connect
+GitHub Actions to the new Azure resources with two secrets:
 
-By default, `infra/main.bicep` deploys:
+- `AZURE_STATIC_WEB_APPS_API_TOKEN` deploys the frontend to Azure Static Web Apps.
+- `AZURE_CREDENTIALS` lets GitHub Actions deploy the backend to Azure Container Apps.
 
-- Resource group: `unesco-services`
+After that, normal pushes to `main` update the app:
+
+- Changes in `frontend/**` trigger the Static Web Apps deployment.
+- Changes in `backend/**` trigger the Container Apps deployment.
+- Infrastructure changes still require running the Bicep deployment command.
+
+## Resources
+
+By default, the template creates:
+
+- Resource group
 - Azure Static Web App for the Vite frontend
 - Azure Container Registry for backend images
-- Azure Container Apps managed environment
-- User-assigned managed identity for the backend
+- Azure Container Apps environment
+- User-assigned managed identity for backend image pulls
 - Azure Container App for the FastAPI backend
-- AcrPull role assignment so the backend can pull private images from ACR
-- Log Analytics workspace for Container Apps logs
-- Microsoft Foundry resource and default project
+- `AcrPull` role assignment from the backend identity to ACR
+- Log Analytics workspace
+- Microsoft Foundry resource and project
 - Azure AI Search service
 - Azure Cosmos DB for NoSQL account
 
-Azure Key Vault is included as a module, but it is disabled by default until the
-project needs it.
+Azure Key Vault is included, but disabled by default.
 
-## Requirements
-
-- Azure CLI installed
-- Bicep support enabled in Azure CLI
-- Access to the target Azure subscription
-- Permission to create resources and role assignments
-- A GitHub repository for the project
-
-Log in first:
+## Login And Select Subscription
 
 ```powershell
 az login
-```
-
-Check available subscriptions:
-
-```powershell
 az account list --output table
+az account set --subscription "<subscription-id>"
 ```
 
-Select the subscription:
-
-```powershell
-az account set --subscription "<subscription-id-or-name>"
-```
-
-For this project, the current subscription ID is:
-
-```text
-6df3f8ce-cb5a-4511-a5dc-c91c703f3257
-```
-
-## Validate The Template
-
-Before deploying, compile the Bicep file:
+Validate the template before deploying:
 
 ```powershell
 az bicep build --file infra/main.bicep
 ```
 
-This catches syntax and schema issues before Azure starts creating resources.
+## Region Selection
 
-## Deploy The Infrastructure
-
-Run this command from the repository root:
-
-```powershell
-az deployment sub create `
-  --name MAIN `
-  --location southcentralus `
-  --template-file infra/main.bicep `
-  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257"
-```
-
-The `--location` value is the location where Azure stores the subscription-level
-deployment metadata. The actual resource locations are controlled by parameters
-inside `main.bicep`.
-
-Current defaults:
+For Mexico, start with:
 
 ```text
-Resource group location: southcentralus
-Static Web App location: centralus
+centralus
 ```
 
-If Azure says that deployment `MAIN` already exists in another location, either
-use a new deployment name or delete the old deployment record. Deleting a
-deployment record does not delete the resources it created.
+Good fallbacks are:
 
-Use a new deployment name:
-
-```powershell
-az deployment sub create `
-  --name main-verifibot `
-  --location southcentralus `
-  --template-file infra/main.bicep `
-  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257"
+```text
+westus2
+eastus2
 ```
 
-Or delete the old deployment record:
+Two Azure errors are common during migration:
 
-```powershell
-az deployment sub delete `
-  --name MAIN `
-  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257"
+- `LocationNotAvailableForResourceType`: the resource type does not support that region.
+- `RequestDisallowedByAzure`: the subscription policy blocks that region.
+
+Use a region that is both supported by the resource type and allowed by the
+subscription. For Azure Static Web Apps, Azure may reject regions such as
+`eastus` or `westus` even when they look geographically reasonable. Use the
+region list shown in the error message.
+
+Cosmos DB uses a display name parameter. Keep it aligned with `rgLocation`:
+
+```text
+centralus -> Central US
+westus2   -> West US 2
+eastus2   -> East US 2
 ```
 
-Then rerun the deployment with `--name MAIN`.
+## Deploy Infrastructure
 
-## Optional Key Vault
-
-Key Vault deployment is disabled by default:
-
-```bicep
-param deployKeyVault bool = false
-```
-
-This avoids deployment failures while the project does not need a vault. Azure
-Key Vault names are globally unique, so placeholder names are often already used
-or reserved by soft delete.
-
-To deploy every service, including Azure Key Vault, pass a unique name:
+Basic deployment:
 
 ```powershell
 az deployment sub create `
   --name MAIN `
-  --location southcentralus `
+  --location centralus `
   --template-file infra/main.bicep `
-  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257" `
-  --parameters deployKeyVault=true keyVaultName="<globally-unique-key-vault-name>"
+  --subscription "<subscription-id>" `
+  --parameters rgLocation="centralus" staticWebAppLocation="centralus" cosmosLocationName="Central US"
 ```
 
-If the Key Vault name was recently deleted, recover or purge the deleted vault
-before reusing the name.
+If deploying to a new subscription while the old Azure resources still exist,
+use unique names for globally reserved services:
 
-## Backend CI/CD Identity
+```powershell
+az deployment sub create `
+  --name MAIN `
+  --location westus2 `
+  --template-file infra/main.bicep `
+  --subscription "<subscription-id>" `
+  --parameters `
+    rgLocation="westus2" `
+    staticWebAppLocation="westus2" `
+    cosmosLocationName="West US 2" `
+    containerRegistryName="<unique-acr-name>" `
+    cosmosAccountName="<unique-cosmos-name>" `
+    foundryName="<unique-foundry-name>" `
+    searchServiceName="<unique-search-name>" `
+    staticWebAppRepositoryToken="<github-repository-token>"
+```
 
-The backend deployment workflow lives in:
+The following names are globally unique or DNS-like and commonly need new values
+when moving subscriptions:
+
+```text
+containerRegistryName
+cosmosAccountName
+foundryName
+searchServiceName
+keyVaultName
+```
+
+Do not paste real tokens into source control or chat. If a token is exposed,
+revoke it and create a new one.
+
+## Static Web Apps
+
+The frontend is a Vite app, so the build output must be `dist`:
+
+```text
+App location: ./frontend
+API location: empty
+Output location: dist
+App artifact location: dist
+Deployment authorization policy: GitHub
+```
+
+The Bicep module sets both `outputLocation` and the older
+`appArtifactLocation` field to `dist`.
+
+To let Azure create or repair the Static Web Apps GitHub workflow, pass a GitHub
+repository token:
+
+```powershell
+--parameters staticWebAppRepositoryToken="<github-repository-token>"
+```
+
+The token must have permission to update repository contents, workflows, actions,
+and secrets. This token belongs to GitHub, not Azure.
+
+For ongoing frontend deployments, GitHub Actions needs:
+
+```text
+AZURE_STATIC_WEB_APPS_API_TOKEN
+```
+
+Get it from:
+
+```text
+Azure Portal
+Static Web App
+Manage deployment token
+```
+
+Add it to GitHub:
+
+```text
+Repository Settings
+Secrets and variables
+Actions
+New repository secret
+Name: AZURE_STATIC_WEB_APPS_API_TOKEN
+Value: <deployment token>
+```
+
+If you recreate the Static Web App in another subscription, replace this secret
+with the token from the new Static Web App.
+
+## Backend Container Apps
+
+The backend workflow is:
 
 ```text
 .github/workflows/backend-container-app.yml
 ```
 
-That workflow needs permission to deploy to Azure. GitHub Actions cannot update
-Azure Container Apps by itself; it needs a Microsoft Entra ID identity for
-automation.
+It builds the Docker image from `backend/`, pushes it to ACR, and updates the
+Azure Container App.
 
-The recommended command creates:
-
-- A Microsoft Entra ID application
-- A service principal for that application
-- An Azure RBAC role assignment scoped to the `unesco-services` resource group
-
-It does not bypass Microsoft Entra ID. It creates an Entra ID identity that
-GitHub Actions can use for automated deployments.
-
-Create the service principal:
+Create a service principal for GitHub Actions in the target subscription:
 
 ```powershell
 az ad sp create-for-rbac `
   --name "github-unesco-verifibot-deploy" `
   --role contributor `
-  --scopes "/subscriptions/6df3f8ce-cb5a-4511-a5dc-c91c703f3257/resourceGroups/unesco-services" `
+  --scopes "/subscriptions/<subscription-id>/resourceGroups/unesco-services" `
   --sdk-auth
 ```
 
-The command prints a JSON object. Copy the full JSON output and save it as a
-GitHub repository secret:
+Copy the full JSON output into GitHub:
 
 ```text
 Repository Settings
@@ -182,112 +212,58 @@ Secrets and variables
 Actions
 New repository secret
 Name: AZURE_CREDENTIALS
-Value: <paste the JSON output>
+Value: <full JSON output>
 ```
 
-The workflow uses this secret in the Azure login step. After that, every push to
-`main` that changes files under `backend/` will build a new backend container
-image, push it to Azure Container Registry, and update the Azure Container App.
+This service principal is the deployment identity. The running Container App uses
+a separate user-assigned managed identity to pull private images from ACR.
 
-## Frontend Deployment
+If `containerRegistryName` changes, update the backend workflow:
 
-The frontend is deployed to Azure Static Web Apps from:
-
-```text
-frontend/
+```yaml
+ACR_NAME: <unique-acr-name>
 ```
 
-The current Static Web Apps configuration is:
+## Optional Key Vault
 
-```text
-App location: ./frontend
-API location: empty
-Output location: dist
-Deployment authorization policy: GitHub
-```
-
-Because this project uses Vite, the output location must be `dist`, not `build`.
-
-The Bicep module declares both Static Web Apps build output fields:
-
-```text
-appArtifactLocation: dist
-outputLocation: dist
-```
-
-`appArtifactLocation` is deprecated in favor of `outputLocation`, but the Azure
-Portal may still display it as "App artifact location".
-
-### GitHub Workflow Creation
-
-Static Web Apps can create the GitHub Actions workflow automatically only when
-Azure receives a GitHub repository token:
+Key Vault is disabled by default:
 
 ```bicep
-param staticWebAppRepositoryToken string = ''
+param deployKeyVault bool = false
 ```
 
-By default this parameter is empty, because repository tokens are secrets and
-should not be committed to source control.
-
-If you want Azure to generate or repair the Static Web Apps GitHub workflow,
-deploy with a GitHub token that has permission to write repository workflows and
-secrets:
+Enable it only when needed:
 
 ```powershell
 az deployment sub create `
   --name MAIN `
-  --location southcentralus `
+  --location centralus `
   --template-file infra/main.bicep `
-  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257" `
-  --parameters staticWebAppRepositoryToken="<github-repository-token>"
+  --subscription "<subscription-id>" `
+  --parameters deployKeyVault=true keyVaultName="<globally-unique-key-vault-name>"
 ```
 
-If you do not pass `staticWebAppRepositoryToken`, the Static Web App resource can
-still be created, but Azure cannot create the GitHub Actions workflow for you.
-In that case, keep the workflow file in `.github/workflows/` and add the Static
-Web Apps deployment token manually as the GitHub secret
-`AZURE_STATIC_WEB_APPS_API_TOKEN`.
+## Troubleshooting
 
-### Verify Static Web Apps Deployment
-
-After deploying with `staticWebAppRepositoryToken`, check GitHub Actions. Azure
-should create or update a Static Web Apps workflow for the repository. The Azure
-portal may take a few minutes to reflect the final deployment status.
-
-Expected frontend settings:
-
-```text
-App location: ./frontend
-API location: empty
-App artifact location: dist
-Output location: dist
-Deployment authorization policy: GitHub
-```
-
-If the Static Web App shows "Waiting for deployment" or the default
-"Congratulations on your new site" page:
-
-1. Check the repository's GitHub Actions tab for a Static Web Apps workflow.
-2. Check that the workflow ran successfully on `main`.
-3. Confirm that the workflow uses `frontend` as the app location and `dist` as
-   the output location.
-4. Confirm that Azure Static Web Apps is connected to the GitHub repository, or
-   that `AZURE_STATIC_WEB_APPS_API_TOKEN` exists if using a manual workflow.
-
-Do not delete the full Azure environment for a frontend deployment issue. If a
-Static Web App resource was created with incorrect settings and does not update
-after redeployment, delete only the Static Web App resource and recreate it from
-Bicep with `staticWebAppRepositoryToken`.
+If Cosmos DB is left in a failed provisioning state, delete only that failed
+Cosmos account and redeploy:
 
 ```powershell
-az staticwebapp delete `
-  --name unesco-verifibot `
-  --resource-group unesco-services `
-  --subscription "6df3f8ce-cb5a-4511-a5dc-c91c703f3257"
+az cosmosdb delete `
+  --name "<cosmos-account-name>" `
+  --resource-group "unesco-services" `
+  --subscription "<subscription-id>" `
+  --yes
 ```
 
-Then rerun the Bicep deployment with the GitHub token parameter.
+If Static Web Apps is stuck on the default page, check:
+
+- The Static Web Apps workflow exists in GitHub Actions.
+- `AZURE_STATIC_WEB_APPS_API_TOKEN` points to the current Static Web App.
+- The workflow uses `./frontend` and `dist`.
+
+Do not delete the full environment for a frontend issue. Delete only the Static
+Web App resource if it must be recreated.
 
 ## Files
 
