@@ -1,1 +1,8 @@
-.learning-hero button, .lesson-grid button { cursor: pointer; }.lesson-grid article { display: flex; flex-direction: column; }
+.learning-hero button,
+.lesson-grid button {
+  cursor: pointer;
+}
+.lesson-grid article {
+  display: flex;
+  flex-direction: column;
+}

@@ -1,4 +1,29 @@
 import { ArrowRight, X } from 'lucide-react'
 import { Brand } from '../Brand/Brand'
 import './AuthModal.css'
-export function AuthModal({ onClose }: { onClose: () => void }) { return <div className="modal-bg" onMouseDown={onClose}><section className="modal" onMouseDown={event => event.stopPropagation()}><button className="modal-x" onClick={onClose} aria-label="Cerrar"><X size={18} /></button><Brand /><h2>Te damos la bienvenida</h2><p>Guarda tus chats, progreso y logros digitales.</p><label>Correo electrónico<input type="email" placeholder="nombre@correo.com" /></label><label>Contraseña<input type="password" placeholder="••••••••" /></label><button className="primary full">Iniciar sesión <ArrowRight size={15} /></button><footer>Demo visual: no se almacenan datos personales.</footer></section></div> }
+export function AuthModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="modal-bg" onMouseDown={onClose}>
+      <section className="modal" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="modal-x" onClick={onClose} aria-label="Cerrar">
+          <X size={18} />
+        </button>
+        <Brand />
+        <h2>Te damos la bienvenida</h2>
+        <p>Guarda tus chats, progreso y logros digitales.</p>
+        <label>
+          Correo electrónico
+          <input type="email" placeholder="nombre@correo.com" />
+        </label>
+        <label>
+          Contraseña
+          <input type="password" placeholder="••••••••" />
+        </label>
+        <button className="primary full">
+          Iniciar sesión <ArrowRight size={15} />
+        </button>
+        <footer>Demo visual: no se almacenan datos personales.</footer>
+      </section>
+    </div>
+  )
+}

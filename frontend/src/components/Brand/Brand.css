@@ -1,3 +1,21 @@
-.brand { display: flex; align-items: center; gap: 9px; color: var(--navy); font-size: 20px; font-weight: 850; letter-spacing: -.04em; }
-.brand i { width: 34px; height: 34px; display: grid; place-items: center; color: var(--teal); border: 2px solid var(--teal); border-radius: 11px 11px 11px 4px; }
-.brand strong { color: var(--teal); }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--navy);
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+.brand i {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+  border: 2px solid var(--teal);
+  border-radius: 11px 11px 11px 4px;
+}
+.brand strong {
+  color: var(--teal);
+}

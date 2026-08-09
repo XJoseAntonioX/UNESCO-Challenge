@@ -1,4 +1,54 @@
 import { BarChart3, ChevronDown } from 'lucide-react'
 import './DashboardPage.css'
-const metrics = [['Verificaciones', '48', '+18%'], ['No verídicas', '19', '40% del total'], ['Fuentes consultadas', '126', '2.6 por análisis'], ['Satisfacción', '4.7', 'de 5 estrellas']]
-export function DashboardPage() { return <main className="section-page"><header className="section-heading"><div><span>MÉTRICAS DE DEMOSTRACIÓN</span><h1>Impacto de la plataforma</h1><p>Uso, resultados y experiencia en una lectura sencilla.</p></div><button className="period">Últimos 30 días <ChevronDown size={15} /></button></header><section className="stat-grid">{metrics.map(([label, value, detail]) => <article key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</section><section className="dashboard-grid"><article className="chart-card wide"><h2><BarChart3 size={18} /> Actividad de verificación</h2><p>Consultas realizadas por semana</p><div className="vertical-bars">{[4,7,6,10,8,13,11,16].map((value, index) => <span key={index} style={{ height: `${value * 5}%` }}><i>S{index + 1}</i></span>)}</div></article><article className="chart-card satisfaction"><h2>Experiencia de usuarios</h2><strong>94%</strong><p>considera clara la explicación</p><small>Datos de demostración</small></article></section></main> }
+const metrics = [
+  ['Verificaciones', '48', '+18%'],
+  ['No verídicas', '19', '40% del total'],
+  ['Fuentes consultadas', '126', '2.6 por análisis'],
+  ['Satisfacción', '4.7', 'de 5 estrellas'],
+]
+export function DashboardPage() {
+  return (
+    <main className="section-page">
+      <header className="section-heading">
+        <div>
+          <span>MÉTRICAS DE DEMOSTRACIÓN</span>
+          <h1>Impacto de la plataforma</h1>
+          <p>Uso, resultados y experiencia en una lectura sencilla.</p>
+        </div>
+        <button className="period">
+          Últimos 30 días <ChevronDown size={15} />
+        </button>
+      </header>
+      <section className="stat-grid">
+        {metrics.map(([label, value, detail]) => (
+          <article key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <small>{detail}</small>
+          </article>
+        ))}
+      </section>
+      <section className="dashboard-grid">
+        <article className="chart-card wide">
+          <h2>
+            <BarChart3 size={18} /> Actividad de verificación
+          </h2>
+          <p>Consultas realizadas por semana</p>
+          <div className="vertical-bars">
+            {[4, 7, 6, 10, 8, 13, 11, 16].map((value, index) => (
+              <span key={index} style={{ height: `${value * 5}%` }}>
+                <i>S{index + 1}</i>
+              </span>
+            ))}
+          </div>
+        </article>
+        <article className="chart-card satisfaction">
+          <h2>Experiencia de usuarios</h2>
+          <strong>94%</strong>
+          <p>considera clara la explicación</p>
+          <small>Datos de demostración</small>
+        </article>
+      </section>
+    </main>
+  )
+}

@@ -5,5 +5,10 @@ import './MainLayout.css'
 
 type Props = { children: ReactNode; view: View; navigate: Navigate; onAuth: () => void }
 export function MainLayout({ children, view, navigate, onAuth }: Props) {
-  return <div className="app-shell"><Header view={view} navigate={navigate} onAuth={onAuth} />{children}</div>
+  return (
+    <div className="app-shell">
+      <Header view={view} navigate={navigate} onAuth={onAuth} />
+      {children}
+    </div>
+  )
 }
