@@ -1,0 +1,8 @@
+.header { height: 70px; padding: 0 clamp(20px, 4vw, 64px); display: flex; align-items: center; gap: 42px; position: sticky; top: 0; z-index: 50; background: #fffffff2; border-bottom: 1px solid var(--line); backdrop-filter: blur(18px); }
+.brand-button, .header nav button, .login, .menu { background: none; }
+.header nav { height: 100%; display: flex; }
+.header nav button { height: 100%; padding: 0 15px; color: var(--muted); border-bottom: 3px solid transparent; font-size: 13px; }
+.header nav button.active { color: var(--navy); border-bottom-color: var(--teal); font-weight: 750; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 9px; }
+.login { font-size: 12px; font-weight: 650; }.signup { padding: 11px 15px; color: white; background: var(--navy); border-radius: 8px; font-size: 12px; font-weight: 700; }.menu { display: none; }
+@media (max-width: 820px) { .header { height: 64px; padding: 0 18px; }.header nav { position: absolute; top: 64px; right: 14px; width: 190px; height: auto; padding: 7px; display: none; flex-direction: column; background: white; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }.header nav.open { display: flex; }.header nav button { height: 42px; border: 0; text-align: left; }.header nav button.active { background: var(--teal-soft); }.login, .signup { display: none; }.menu { display: block; } }
