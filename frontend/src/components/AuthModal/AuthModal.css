@@ -1,1 +1,3 @@
-.modal input:focus { border-color: var(--teal); }
+.modal input:focus {
+  border-color: var(--teal);
+}
