@@ -38,3 +38,36 @@ jobs:
           resourceGroup: ${{ env.RESOURCE_GROUP }}
           containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT }}
           targetPort: 8000
+
+      - name: Configure backend secrets
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az containerapp secret set \
+              --name "${{ env.CONTAINER_APP_NAME }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --secrets \
+                cosmos-endpoint="${{ secrets.COSMOS_ENDPOINT }}" \
+                cosmos-key="${{ secrets.COSMOS_KEY }}" \
+                azure-openai-endpoint="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
+                azure-openai-api-key="${{ secrets.AZURE_OPENAI_API_KEY }}" \
+                azure-openai-chat-deployment="${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}" \
+                jwt-secret="${{ secrets.JWT_SECRET }}" \
+                factcheck-api-key="${{ secrets.FACTCHECK_API_KEY }}"
+
+      - name: Configure backend environment
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name "${{ env.CONTAINER_APP_NAME }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --set-env-vars \
+                COSMOS_ENDPOINT=secretref:cosmos-endpoint \
+                COSMOS_KEY=secretref:cosmos-key \
+                AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint \
+                AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key \
+                AZURE_OPENAI_CHAT_DEPLOYMENT=secretref:azure-openai-chat-deployment \
+                JWT_SECRET=secretref:jwt-secret \
+                FACTCHECK_API_KEY=secretref:factcheck-api-key \
+                CORS_ORIGINS="${{ secrets.CORS_ORIGINS }}"
