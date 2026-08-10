@@ -159,6 +159,7 @@ For ongoing frontend deployments, GitHub Actions needs:
 
 ```text
 AZURE_STATIC_WEB_APPS_API_TOKEN
+VITE_API_URL
 ```
 
 Get it from:
@@ -168,6 +169,16 @@ Azure Portal
 Static Web App
 Manage deployment token
 ```
+
+Set `VITE_API_URL` to the backend Container App origin, without a trailing slash:
+
+```text
+https://<backend-container-app-fqdn>
+```
+
+The frontend calls paths such as `/api/chat/respond`. In local development,
+Vite proxies `/api/*` to `http://localhost:8000`; in production, `VITE_API_URL`
+must point those calls at the Azure Container App.
 
 Add it to GitHub:
 
