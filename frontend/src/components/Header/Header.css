@@ -39,6 +39,91 @@
   align-items: center;
   gap: 9px;
 }
+.profile-menu {
+  position: relative;
+}
+.profile-trigger {
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--navy);
+  background: transparent;
+  border-radius: 9px;
+}
+.profile-trigger:hover,
+.profile-trigger:focus-visible {
+  background: var(--teal-soft);
+}
+.profile-chevron {
+  transition: transform 0.18s ease;
+}
+.profile-chevron.is-open {
+  transform: rotate(180deg);
+}
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 220px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.profile-dropdown p {
+  margin: 4px 7px 8px;
+  padding-bottom: 10px;
+  display: grid;
+  gap: 3px;
+  border-bottom: 1px solid var(--line);
+  color: var(--navy);
+  font-size: 13px;
+}
+.profile-dropdown p small {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-dropdown button {
+  width: 100%;
+  padding: 10px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a32828;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+.profile-dropdown button:hover,
+.profile-dropdown button:focus-visible {
+  background: #fff0f0;
+}
+.user-email {
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: var(--teal);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+}
 .login {
   font-size: 12px;
   font-weight: 650;
@@ -85,7 +170,9 @@
     background: var(--teal-soft);
   }
   .login,
-  .signup {
+  .user-email,
+  .signup,
+  .profile-chevron {
     display: none;
   }
   .menu {

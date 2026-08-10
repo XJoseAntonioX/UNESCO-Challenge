@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "14303398477426646533"
+      "templateHash": "11793408349195847697"
     },
     "description": "Deploys the UNESCO services resource group and supporting Azure services."
   },
@@ -200,6 +200,13 @@
       "defaultValue": "South Central US",
       "metadata": {
         "description": "Cosmos DB regional display name."
+      }
+    },
+    "cosmosDatabaseName": {
+      "type": "string",
+      "defaultValue": "unesco-db",
+      "metadata": {
+        "description": "Cosmos DB SQL database for application data."
       }
     },
     "tags": {
@@ -1275,6 +1282,9 @@
           "locationName": {
             "value": "[parameters('cosmosLocationName')]"
           },
+          "databaseName": {
+            "value": "[parameters('cosmosDatabaseName')]"
+          },
           "tags": {
             "value": "[parameters('tags')]"
           }
@@ -1286,7 +1296,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.46.1.21595",
-              "templateHash": "8809027149980584161"
+              "templateHash": "5308849641214306897"
             },
             "description": "Creates or updates an Azure Cosmos DB for NoSQL account."
           },
@@ -1316,6 +1326,27 @@
               "defaultValue": {},
               "metadata": {
                 "description": "Tags to apply to the Azure Cosmos DB account."
+              }
+            },
+            "databaseName": {
+              "type": "string",
+              "defaultValue": "unesco-db",
+              "metadata": {
+                "description": "SQL database used by VERIFIBOT."
+              }
+            },
+            "usersContainerName": {
+              "type": "string",
+              "defaultValue": "users",
+              "metadata": {
+                "description": "Container that stores user identities and password hashes."
+              }
+            },
+            "chatsContainerName": {
+              "type": "string",
+              "defaultValue": "chats",
+              "metadata": {
+                "description": "Container that stores chat metadata and messages."
               }
             }
           },
@@ -1347,12 +1378,77 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+              "apiVersion": "2025-04-15",
+              "name": "[format('{0}/{1}', parameters('accountName'), parameters('databaseName'))]",
+              "properties": {
+                "resource": {
+                  "id": "[parameters('databaseName')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+              "apiVersion": "2025-04-15",
+              "name": "[format('{0}/{1}/{2}', parameters('accountName'), parameters('databaseName'), parameters('usersContainerName'))]",
+              "properties": {
+                "resource": {
+                  "id": "[parameters('usersContainerName')]",
+                  "partitionKey": {
+                    "paths": [
+                      "/email"
+                    ],
+                    "kind": "Hash",
+                    "version": 2
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('accountName'), parameters('databaseName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+              "apiVersion": "2025-04-15",
+              "name": "[format('{0}/{1}/{2}', parameters('accountName'), parameters('databaseName'), parameters('chatsContainerName'))]",
+              "properties": {
+                "resource": {
+                  "id": "[parameters('chatsContainerName')]",
+                  "partitionKey": {
+                    "paths": [
+                      "/userId"
+                    ],
+                    "kind": "Hash",
+                    "version": 2
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('accountName'), parameters('databaseName'))]"
+              ]
             }
           ],
           "outputs": {
             "accountName": {
               "type": "string",
               "value": "[parameters('accountName')]"
+            },
+            "databaseName": {
+              "type": "string",
+              "value": "[parameters('databaseName')]"
+            },
+            "usersContainerName": {
+              "type": "string",
+              "value": "[parameters('usersContainerName')]"
+            },
+            "chatsContainerName": {
+              "type": "string",
+              "value": "[parameters('chatsContainerName')]"
             }
           }
         }
@@ -1426,6 +1522,10 @@
     "cosmosAccountName": {
       "type": "string",
       "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cosmos-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('cosmosAccountName'), parameters('rgLocation')))), '2025-04-01').outputs.accountName.value]"
+    },
+    "cosmosDatabaseName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('rgName')), 'Microsoft.Resources/deployments', format('cosmos-{0}', uniqueString(deployment().name, parameters('rgName'), parameters('cosmosAccountName'), parameters('rgLocation')))), '2025-04-01').outputs.databaseName.value]"
     }
   }
 }

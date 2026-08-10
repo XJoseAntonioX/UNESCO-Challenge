@@ -32,7 +32,7 @@ By default, the template creates:
 - Log Analytics workspace
 - Microsoft Foundry resource and project
 - Azure AI Search service
-- Azure Cosmos DB for NoSQL account
+- Azure Cosmos DB for NoSQL account, `unesco-db`, and the `users` and `chats` containers
 
 Azure Key Vault is included, but disabled by default.
 

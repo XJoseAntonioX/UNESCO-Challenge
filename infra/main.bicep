@@ -99,6 +99,9 @@ param cosmosAccountName string = 'cosmos-dev-challenge'
 @description('Cosmos DB regional display name.')
 param cosmosLocationName string = 'South Central US'
 
+@description('Cosmos DB SQL database for application data.')
+param cosmosDatabaseName string = 'unesco-db'
+
 @description('Tags to apply to the resource group.')
 param tags object = {}
 
@@ -241,6 +244,7 @@ module cosmosDb 'modules/cosmos-nosql.bicep' = {
     accountName: cosmosAccountName
     location: rgLocation
     locationName: cosmosLocationName
+    databaseName: cosmosDatabaseName
     tags: tags
   }
   dependsOn: [
@@ -264,3 +268,4 @@ output foundryName string = foundry.outputs.foundryName
 output foundryProjectName string = foundry.outputs.projectName
 output searchServiceName string = searchService.outputs.searchServiceName
 output cosmosAccountName string = cosmosDb.outputs.accountName
+output cosmosDatabaseName string = cosmosDb.outputs.databaseName
