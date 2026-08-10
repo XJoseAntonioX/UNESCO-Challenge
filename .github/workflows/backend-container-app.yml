@@ -15,7 +15,7 @@ env:
   RESOURCE_GROUP: unesco-services
   CONTAINER_APP_NAME: unesco-verifibot-api
   CONTAINER_APP_ENVIRONMENT: unesco-verifibot-env
-  ACR_NAME: unescoverifibotacr
+  ACR_NAME: unescoverifibotacr2
 
 jobs:
   deploy:
