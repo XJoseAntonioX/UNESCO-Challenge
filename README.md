@@ -1,7 +1,5 @@
 # VERIFIBOT
 
-![VERIFIBOT Architecture](docs/Architecture.png)
-
 ## Overview
 
 VERIFIBOT is a Spanish-language educational fact-checking assistant built to help
