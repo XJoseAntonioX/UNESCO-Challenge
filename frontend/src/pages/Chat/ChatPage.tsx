@@ -27,13 +27,17 @@ import './ChatPage.css'
 
 type Props = { user: User | null; onAuth: (mode: AuthMode) => void }
 
+function VerdictIcon({ verdict, size = 20 }: { verdict: FactCheckResult['verdict']; size?: number }) {
+  return verdict === 'verdadera' ? <CheckCircle2 size={size} /> : <X size={size} />
+}
+
 function Verdict({ analysis }: { analysis: FactCheckResult }) {
   const [sourcesOpen, setSourcesOpen] = useState(false)
   return (
     <article className={`verdict verdict-${analysis.verdict.replaceAll(' ', '-')}`}>
       <header>
         <span className="wrong">
-          {analysis.verdict === 'verdadera' ? <CheckCircle2 size={20} /> : <X size={20} />}
+          <VerdictIcon verdict={analysis.verdict} />
         </span>
         <div>
           <small>VEREDICTO</small>
@@ -343,13 +347,9 @@ export function ChatPage({ user, onAuth }: Props) {
           Análisis de evidencia
         </h2>
         {latestAnalysis ? (
-          <div className="score">
+          <div className={`score verdict-${latestAnalysis.verdict.replaceAll(' ', '-')}`}>
             <span className="wrong">
-              {latestAnalysis.verdict === 'verdadera' ? (
-                <CheckCircle2 size={18} />
-              ) : (
-                <X size={18} />
-              )}
+              <VerdictIcon verdict={latestAnalysis.verdict} size={18} />
             </span>
             <div>
               <b>{latestAnalysis.verdict}</b>

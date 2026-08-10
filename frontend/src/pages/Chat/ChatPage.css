@@ -449,6 +449,18 @@
   color: var(--red);
   font-size: 15px;
 }
+.score.verdict-verdadera .wrong {
+  background: var(--teal);
+}
+.score.verdict-verdadera b {
+  color: var(--teal);
+}
+.score.verdict-parcialmente-correcta .wrong {
+  background: #c28b16;
+}
+.score.verdict-parcialmente-correcta b {
+  color: #9a6a06;
+}
 .score p {
   margin: 4px 0 0;
   color: #263b50;
