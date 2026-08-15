@@ -8,6 +8,13 @@
   background: var(--red-soft);
   border-radius: 7px;
 }
+.auth-success {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  color: var(--teal);
+  background: var(--teal-soft);
+  border-radius: 7px;
+}
 .password-help {
   margin-top: 6px !important;
   text-align: left !important;

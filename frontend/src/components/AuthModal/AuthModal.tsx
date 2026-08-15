@@ -21,18 +21,20 @@ export function AuthModal({ initialMode, onClose, onAuthenticated }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
     try {
       if (mode === 'signup') {
         await postSignup(name, email, password)
         setMode('login')
         setPassword('')
-        setError('Cuenta creada. Ahora inicia sesión.')
+        setSuccess('Cuenta creada. Ahora inicia sesión.')
         return
       }
       const result = await postLogin(email, password)
@@ -51,6 +53,7 @@ export function AuthModal({ initialMode, onClose, onAuthenticated }: Props) {
   const changeMode = () => {
     setMode((current) => (current === 'login' ? 'signup' : 'login'))
     setError('')
+    setSuccess('')
   }
 
   return (
@@ -103,6 +106,11 @@ export function AuthModal({ initialMode, onClose, onAuthenticated }: Props) {
         {error && (
           <p className="auth-error" role="alert">
             {error}
+          </p>
+        )}
+        {success && (
+          <p className="auth-success" role="status">
+            {success}
           </p>
         )}
         <button className="primary full" disabled={loading}>

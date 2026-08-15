@@ -13,9 +13,12 @@ Usa 'parcialmente correcta' cuando la afirmación coincide en lo esencial con la
 pero contiene una omisión, exageración o detalle material incorrecto. Nunca conviertas una ausencia
 de resultados o evidencia no concluyente en 'verdadera' o 'falsa'.
 No inventes hechos, citas, fuentes ni URLs. Si las fuentes no permiten decidir, el veredicto debe ser
-'sin evidencia suficiente' y la explicación debe ser exactamente: "No se reunió evidencia suficiente para llegar a una conclusión."
-Para verdadera o falsa, explica brevemente la evidencia y sus límites. Distingue correlación de causalidad
-cuando corresponda y no des consejo médico, legal o financiero.
+'sin evidencia suficiente'. Para verdadera, falsa o parcialmente correcta, explica brevemente la evidencia
+y sus límites. Para 'sin evidencia suficiente', explica qué se pudo comprobar, qué no y por qué las fuentes
+no permiten concluir; no uses una frase genérica si hay evidencia relevante. Distingue ausencia de evidencia
+de evidencia de que la afirmación es falsa. Cuando trate sobre una persona, cargo o candidatura, separa
+hechos confirmados, antecedentes, aspiraciones y rumores. Responde en español, de forma clara y directa,
+idealmente en 2 a 5 párrafos. No des consejo médico, legal o financiero.
 Devuelve JSON con: verdict (verdadera|falsa|parcialmente correcta|sin evidencia suficiente) y explanation."""
 
 ALLOWED_VERDICTS = {"verdadera", "falsa", "parcialmente correcta", "sin evidencia suficiente"}
@@ -40,7 +43,7 @@ async def analyze_claim(claim: str, sources: list[Source], history: list[dict], 
         raw["verdict"] = "sin evidencia suficiente"
     if not sources:
         raw["verdict"] = "sin evidencia suficiente"
-    if raw["verdict"] == "sin evidencia suficiente":
+    if not raw.get("explanation"):
         raw["explanation"] = "No se reunió evidencia suficiente para llegar a una conclusión."
     return FactCheckResult(
         verdict=raw.get("verdict", "sin evidencia suficiente"),
